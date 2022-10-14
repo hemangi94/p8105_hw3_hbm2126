@@ -111,5 +111,17 @@ accel_df =
     ) 
 ```
 
+```{r}
+total_activity = 
+  accel_df %>% 
+  group_by(day, week) %>% 
+  summarize(sum(minute_of_the_day)) %>% 
+  pivot_wider(
+    names_from = "day",
+    values_from = "sum(minute_of_the_day)"
+  ) %>% 
+  select(week, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday) %>% 
+  knitr::kable(digits = 2)
+```
 
 
