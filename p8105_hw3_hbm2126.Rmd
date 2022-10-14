@@ -94,8 +94,22 @@ instacart %>%
   knitr::kable(digits = 2)
 ```
 
+# Problem 2
 
-
+```{r importing and cleaning data}
+accel_df = 
+  read_csv("data/accel_data.csv") %>%
+  janitor::clean_names() %>%
+  pivot_longer(
+    activity_1:activity_1440,
+    names_to = "activity_meausre",
+    names_prefix = "activity_",
+    values_to = "minute_of_the_day") %>% 
+  select(week, day_id, everything()) %>% 
+  mutate(
+    weekend_weekday = case_when(day %in% c("Monday","Tuesday","Wednesday","Thursday","Friday") ~ "Weekday", day %in% c("Saturday","Sunday") ~ "Weekend")
+    ) 
+```
 
 
 
