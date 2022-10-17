@@ -102,12 +102,13 @@ accel_df =
   janitor::clean_names() %>%
   pivot_longer(
     activity_1:activity_1440,
-    names_to = "activity_meausre",
+    names_to = "minute",
     names_prefix = "activity_",
-    values_to = "minute_of_the_day") %>% 
+    values_to = "activity_measure") %>% 
   select(week, day_id, everything()) %>% 
   mutate(
-    weekend_weekday = case_when(day %in% c("Monday","Tuesday","Wednesday","Thursday","Friday") ~ "Weekday", day %in% c("Saturday","Sunday") ~ "Weekend")
+    weekend_weekday = case_when(day %in% c("Monday","Tuesday","Wednesday","Thursday","Friday") ~ "Weekday", day %in% c("Saturday","Sunday") ~ "Weekend"), 
+    minute = as.integer(minute)
     ) 
 ```
 
@@ -115,13 +116,81 @@ accel_df =
 total_activity = 
   accel_df %>% 
   group_by(day, week) %>% 
-  summarize(sum(minute_of_the_day)) %>% 
+  summarize(sum(activity_measure)) %>% 
   pivot_wider(
     names_from = "day",
-    values_from = "sum(minute_of_the_day)"
+    values_from = "sum(activity_measure)"
   ) %>% 
   select(week, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday) %>% 
   knitr::kable(digits = 2)
 ```
 
+```{r}
+accel_df %>% 
+  ggplot(aes(x = minute, y = activity_measure, color = day)) +
+  geom_line()
+
+
+```
+
+# Problem 3
+
+```{r reading in data}
+data("ny_noaa")
+
+ny_noaa = 
+  ny_noaa %>% 
+  as_tibble(ny_noaa)
+
+```
+
+```{r cleaning data}
+ny_noaa_tidy = 
+  ny_noaa %>% 
+  janitor::clean_names() %>% 
+  separate(date, into = c("year", "month", "day"), sep = "-") %>%
+  mutate(
+    tmax = as.integer(tmax),
+    tmin = as.integer(tmin),
+    tmax = tmax/10,
+    tmin = tmin/10,
+    prcp = prcp/10
+    ) %>% 
+```
+
+```{r}
+avg_tmax_plot = 
+  ny_noaa_tidy %>% 
+  group_by(id, year, month) %>% 
+  filter(month %in% c("01", "07")) %>% 
+  summarize(avg_tmax = mean(tmax)) %>% 
+  ggplot(aes(x = year, y = avg_tmax, group = id)) +
+  geom_line() +
+  facet_grid(~month)
+avg_tmax_plot
+  
+```
+
+```{r}
+tmax_tmin_plot = 
+  ny_noaa_tidy %>% 
+  ggplot(aes(x = tmax, y = tmin, color = id)) + 
+  geom_point(alpha = .5) +
+  theme(legend.position = "none")
+
+
+```
+
+```{r}
+snowfall_dist = 
+  ny_noaa_tidy %>% 
+  filter(snow > 0 & snow < 100) %>% 
+  ggplot(aes(x = snow, fill = id)) + 
+  geom_density(alpha = .5) + 
+  theme(legend.position = "none")
+```
+
+```{r}
+combined_plot = tmax_tmin_plot + snowfall_dist
+```
 
