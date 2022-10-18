@@ -116,11 +116,11 @@ accel_df =
 
 ### Describing resulting dataset
 
-After cleaning the dataset in the code chunk above, the resulting dataset has `r nrow(accel_df)` observations and `r ncol(accel_df)` variables. The dataset contains the following variables: what day and week the observation is from, the minute-interval associated with the observation, the actual physical activity measure, and a variable that indicates whether this observation was recorded on a weekday or a weekend. 
+After cleaning the dataset in the code chunk above, the resulting dataset has `r nrow(accel_df)` observations and `r ncol(accel_df)` variables. The dataset contains the following variables: what day and week the observation is from, the minute of the day (the observations were recorded at one-minute intervals) associated with the observation, the actual physical activity measure, and a variable that indicates whether this observation was recorded on a weekday or a weekend. 
 
 
 
-The table below shows total activity per day across each one of the 5 weeks. 
+The table below shows total activity per day across each one of the 5 weeks. There are no apparent patterns in the table. However, it is worth noting that for weeks 4 and 5, the total activity per day on the weekends was much lower than on the weekdays. 
 
 ```{r}
 total_activity = 
@@ -133,14 +133,17 @@ total_activity =
   ) %>% 
   select(week, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday) %>% 
   knitr::kable(digits = 2)
+
+total_activity
 ```
 
-The plot below shows the 24-hour activity time courses for each day. Some patterns that are apparent from this plot: Wednesday has some of the highest activity measures in the week. Most activity starts around the 400th minute, on all days. 
+The plot below shows the 24-hour activity time courses for each day. Some patterns that are apparent from this plot: Wednesday and Friday have some of the highest activity measures in the week. Most activity starts picking up after the 250th minute, on all days, and plateaus around the 750th minute, and picks up again a little bit around the 1200th minute.
 
 ```{r}
 accel_df %>% 
   ggplot(aes(x = minute, y = activity_measure, color = day)) +
-  geom_line()
+  geom_line(alpha = .5) +
+  geom_smooth(se = FALSE)
 ```
 
 # Problem 3
@@ -156,7 +159,7 @@ ny_noaa =
 
 ### Describing the dataset
 
-The NY NOAA dataset has `r nrow(ny_noaa)` observations and `r ncol(ny_noaa)` variables. This dataset contains weather data for all New York state weather stations from ` r min(ny_noaa$date)` to `r max(ny_noaa$date)` The variables in this dataset include the station ID, the date of observation, precipitation (in tenths of mm), snowfall (in mm), snow depth (in mm), and maximum and minimum temperatures (in tenths of degrees). This dataset contains a lot of missing values: more precisely, there are `r sum(is.na(ny_noaa))` missing values in this data.
+The NY NOAA dataset has `r nrow(ny_noaa)` observations and `r ncol(ny_noaa)` variables. This dataset contains weather data for all New York state weather stations from `r min(ny_noaa$date)` to `r max(ny_noaa$date)` The variables in this dataset include the station ID, the date of observation, precipitation (in tenths of mm), snowfall (in mm), snow depth (in mm), and maximum and minimum temperatures (in tenths of degrees). This dataset contains a lot of missing values: more precisely, there are `r sum(is.na(ny_noaa))` rows with missing values in this data.
 
 ```{r cleaning data}
 ny_noaa_tidy = 
@@ -174,12 +177,22 @@ ny_noaa_tidy =
 
 ### Answering questions about the dataset (after tidying)
 
-The most commonly observed value for snowfall is `r names(which.max(table(ny_noaa$snow)))` mm. I think this makes sense because it only snows during the winter months and even in the winter months, it does not snow everyday. Therefore, for most days in the year, we would expect no snowfall.
+The most commonly observed value for snowfall is `r names(which.max(table(ny_noaa$snow)))` mm. I think this makes sense because it only snows during the winter months and even in the winter months, it does not snow everyday. Therefore, for most days in the year, we would expect no snowfall. As seen in the table below, the second most common value is NA/missing. This may be because there snowfall data was not collected every day in the year. 
+
+```{r}
+ny_noaa_tidy %>% 
+  count(snow) %>% 
+  mutate(rank = min_rank(desc(n))) %>%
+  filter(rank < 4) %>% 
+  arrange(desc(n)) %>% 
+  knitr::kable()
+```
+
 
 
 ### Making plots
 
-The plot below shows the average max temperature in January and July in each station across years. The average max temperature is much higher in July than in January, which makes sense. The average max temperature in July has been gradually increasing over the years. 
+The plot below shows the average max temperature in January and July in each station across years. The average max temperature is much higher in July than in January, which makes sense. There are cyclical patterns where the average max temperature increases and decreases, that is more or less consistent across the years and across the months. There are no outliers as such. 
 
 ```{r}
 avg_tmax_plot = 
@@ -201,19 +214,13 @@ avg_tmax_plot
 ```{r}
 tmax_tmin_plot = 
   ny_noaa_tidy %>% 
-  ggplot(aes(x = tmax, y = tmin, color = id)) + 
-  geom_point(alpha = .5) +
-  theme(legend.position = "none")
+  ggplot(aes(x = tmax, y = tmin)) + 
+  geom_hex() +
+  theme(legend.position = "right")
+  
 ```
 
-```{r}
-snowfall_dist = 
-  ny_noaa_tidy %>% 
-  filter(snow > 0 & snow < 100) %>% 
-  ggplot(aes(x = snow, fill = id)) + 
-  geom_density(alpha = .5) + 
-  theme(legend.position = "none")
-```
+
 
 ```{r}
 snowfall_dist = 
